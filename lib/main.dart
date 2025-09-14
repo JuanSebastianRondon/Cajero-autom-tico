@@ -113,7 +113,7 @@ class SeleccionRetiro extends StatelessWidget {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => const RetiroCuenta(),
+                       builder: (context) => const RetiroCuenta(),
                       ),
                     );
                   },

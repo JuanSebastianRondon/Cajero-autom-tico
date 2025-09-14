@@ -24,16 +24,11 @@ class _NequiRetiroState extends State<NequiRetiro> {
   Map<int, int> _billetesCalculados = {};
   int _totalBilletes = 0;
   
-  // Array con números de teléfono guardados
   final List<String> _numerosGuardados = [
     '3001234567',
     '3109876543',
   ];
-  
-  // Denominaciones de billetes disponibles
-  final List<int> _denominaciones = [100000, 50000, 20000, 10000];
-  
-  // Opciones de retiro fijas
+
   final List<int> _retirosFijos = [
     20000,
     50000,
@@ -43,61 +38,23 @@ class _NequiRetiroState extends State<NequiRetiro> {
     500000,
   ];
 
-  // Función para verificar si el número está guardado
-  bool _ExisteNumero(String numero) {
+  bool _existeNumero(String numero) {
     return _numerosGuardados.contains(numero);
   }
 
-  // Función común para validar el número de celular
   String? _validarCelular(String celular) {
     if (!RegExp(r'^\d{10}$').hasMatch(celular)) {
       return "Por favor ingrese un número de celular válido de 10 dígitos.";
     }
-    
-    if (!_ExisteNumero(celular)) {
-      return "Número no existente. Intente de nuevo.";
-    }
-    
-    return null; 
-     }
-
-  // Función para calcular billetes necesarios usando método de acarreo
-  Map<int, int> _calcularBilletes(int monto) {
-    Map<int, int> billetes = {};
-    int resto = monto;
-    
- 
-    for (int i = 0; i < _denominaciones.length; i++) {
-      int denominacion = _denominaciones[i];
-      if (resto >= denominacion) {
-        billetes[denominacion] = resto ~/ denominacion; // cantidad de billetes
-        resto = resto % denominacion;                   // actualizar el residuo
+      if (!_existeNumero(celular)) {
+        return "Número no existente. Intente de nuevo.";
       }
+      return null; 
     }
-    
-    return billetes;
-  }
-
-  // Función para validar si el monto es válido usando método de acarreo
-  bool _esMontoValido(int monto) {
-    int resto = monto;
-    
-    // Usar el método de acarreo para validar
-    for (int i = 0; i < _denominaciones.length; i++) {
-      int denominacion = _denominaciones[i];
-      if (resto >= denominacion) {
-        resto = resto % denominacion; // actualizar el residuo
-      }
-    }
-    
-    // Si el resto es 0, el monto es válido
-    return resto == 0;
-  }
 
   void _generarClave() {
     String celular = _celularController.text;
     
-    // Validar el número de celular
     String? error = _validarCelular(celular);
     if (error != null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -157,10 +114,7 @@ class _NequiRetiroState extends State<NequiRetiro> {
       tiempoRestante = 60;
       _claveRenovada = true;
     });
-
-    // El timer ya está corriendo, no necesitamos crear uno nuevo
     
-    // Mostrar mensaje de renovación automática
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text(" Clave se renovará automáticamente"),
@@ -184,8 +138,6 @@ class _NequiRetiroState extends State<NequiRetiro> {
       );
       return;
     }
-
-    // Mostrar sistema de retiros integrado
     _mostrarSistemaRetiros(celular);
   }
 
@@ -201,10 +153,9 @@ class _NequiRetiroState extends State<NequiRetiro> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text("Celular: $celular", style: const TextStyle(fontWeight: FontWeight.bold)),
+                Text("Celular: 0$celular", style: const TextStyle(fontWeight: FontWeight.bold)),
                 const SizedBox(height: 16),
                 
-                // Retiros fijos
                 const Text("Retiros Fijos:", style: TextStyle(fontWeight: FontWeight.bold)),
                 const SizedBox(height: 8),
                 Wrap(
@@ -245,7 +196,6 @@ class _NequiRetiroState extends State<NequiRetiro> {
                 
                 const SizedBox(height: 16),
                 
-                // Valor libre
                 const Text("Valor Libre:", style: TextStyle(fontWeight: FontWeight.bold)),
                 const SizedBox(height: 8),
                 TextField(
@@ -344,31 +294,44 @@ class _NequiRetiroState extends State<NequiRetiro> {
     );
   }
 
-  void _calcularYMostrarBilletes(int monto) {
-  // Matriz [denominación, cantidad]
-  List<List<int>> billetes = [
-    [100000, 0],
-    [50000, 0],
-    [20000, 0],
-    [10000, 0],
-  ];
+void _calcularYMostrarBilletes(int monto) {
+  if (monto % 10000 != 0) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text("No se puede retirar \$${_formatearMonto(monto)}."),
+        backgroundColor: Colors.red,
+        duration: const Duration(seconds: 4),
+      ),
+    );
+    return;
+  }
+  _billetesCalculados.clear();
+  
+  Map<int, int> billetes = {
+    100000: 0,
+    50000: 0,
+    20000: 0,
+    10000: 0,
+  };
 
   int resto = monto;
-
-  // Método del acarreo
-  for (int i = 0; i < billetes.length; i++) {
-    int denominacion = billetes[i][0];
+  
+  List<int> denominaciones = [100000, 50000, 20000, 10000];
+  
+  for (int denominacion in denominaciones) {
     if (resto >= denominacion) {
-      billetes[i][1] = resto ~/ denominacion; // cantidad de billetes
-      resto = resto % denominacion;           // actualizar el residuo
+      billetes[denominacion] = resto ~/ denominacion; // Cantidad de billetes
+      resto = resto % denominacion;                   // Actualizar el residuo
     }
   }
 
-  // Verificar si el monto se pudo cubrir exacto
   if (resto != 0) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text("No se puede retirar $monto."),
+        content: Text(
+          "No se puede retirar \$${_formatearMonto(monto)}. "
+          "Solo disponemos de billetes de \$10.000, \$20.000, \$50.000 y \$100.000"
+        ),
         backgroundColor: Colors.red,
         duration: const Duration(seconds: 4),
       ),
@@ -376,32 +339,127 @@ class _NequiRetiroState extends State<NequiRetiro> {
     return;
   }
 
-  // Construir el reporte de billetes
-  String reporte = "✅ Retiro de $monto en billetes:\n";
-  for (int i = 0; i < billetes.length; i++) {
-    if (billetes[i][1] > 0) {
-      reporte += "${billetes[i][1]} billete(s) de ${billetes[i][0]}\n";
+  _billetesCalculados = billetes;
+  _totalBilletes = billetes.values.fold(0, (sum, cantidad) => sum + cantidad);
+  _montoSeleccionado = monto;
+
+  String reporte = "Retiro de \$${_formatearMonto(monto)}\n\n";
+  reporte += "Billetes dispensados:\n";
+  
+  bool hayBilletes = false;
+  for (MapEntry<int, int> entry in billetes.entries) {
+    if (entry.value > 0) {
+      reporte += "• ${entry.value} billete(s) de \$${_formatearMonto(entry.key)}\n";
+      hayBilletes = true;
     }
   }
+  
+  if (!hayBilletes) {
+    reporte += "Error en el cálculo de billetes";
+  } else {
+    reporte += "\nTotal de billetes: $_totalBilletes";
+    
+    // Calcular retiros restantes estimados
+    int retirosRestantes = _calcularRetirosRestantes();
+    reporte += "\nRetiros estimados restantes: $retirosRestantes";
+  }
 
-  // Mostrar en pantalla con AlertDialog
   showDialog(
     context: context,
-    builder: (_) => AlertDialog(
-      title: const Text("Desglose de billetes"),
-      content: Text(reporte),
+    builder: (context) => AlertDialog(
+      title: const Text("Desglose de Billetes"),
+      content: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.account_balance_wallet, size: 40, color: Colors.green),
+            const SizedBox(height: 10),
+            Text(
+              reporte,
+              style: const TextStyle(fontSize: 14),
+            ),
+          ],
+        ),
+      ),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text("OK"),
+          child: const Text("Cancelar"),
+        ),
+        ElevatedButton(
+          onPressed: () {
+            Navigator.pop(context);
+            // Aquí puedes llamar a _procesarRetiro si quieres proceder
+            _mostrarConfirmacionRetiro();
+          },
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.green,
+            foregroundColor: Colors.white,
+          ),
+          child: const Text("Confirmar Retiro"),
         ),
       ],
     ),
   );
 }
 
- 
 
+String _formatearMonto(int monto) {
+  return monto.toString().replaceAllMapped(
+    RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), 
+    (Match m) => '${m[1]}.'
+  );
+}
+
+int _calcularRetirosRestantes() {
+  // Inventario simulado del cajero
+  int inventario100k = 50;
+  int inventario50k = 100;
+  int inventario20k = 150;
+  int inventario10k = 200;
+  
+  // Calcular dinero total disponible
+  int totalDisponible = (inventario100k * 100000) + 
+                       (inventario50k * 50000) + 
+                       (inventario20k * 20000) + 
+                       (inventario10k * 10000);
+  
+  // Estimar retiros promedio de $100,000
+  return totalDisponible ~/ 100000;
+}
+
+// Método para mostrar confirmación antes del retiro final
+void _mostrarConfirmacionRetiro() {
+  showDialog(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: const Text("Confirmar Transacción"),
+      content: Text(
+        "¿Confirma que desea retirar \$${_formatearMonto(_montoSeleccionado!)}?\n\n"
+        "Se dispensarán $_totalBilletes billetes."
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text("Cancelar"),
+        ),
+        ElevatedButton(
+          onPressed: () {
+            Navigator.pop(context);
+            // Aquí llamarías a tu método _procesarRetiro original
+            _procesarRetiro(_celularController.text);
+          },
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.green,
+            foregroundColor: Colors.white,
+          ),
+          child: const Text("Confirmar"),
+        ),
+      ],
+    ),
+  );
+}
   void _procesarRetiro(String celular) {
     showDialog(
       context: context,
@@ -411,7 +469,7 @@ class _NequiRetiroState extends State<NequiRetiro> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text("✅ Retiro procesado correctamente", 
+            const Text(" Retiro procesado correctamente", 
               style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             Text("Celular: $celular"),
@@ -427,7 +485,7 @@ class _NequiRetiroState extends State<NequiRetiro> {
                 RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), 
                 (Match m) => '${m[1]}.'
               )}")
-            ).toList(),
+            ),
             const SizedBox(height: 8),
             Text("Total billetes: $_totalBilletes", style: const TextStyle(fontWeight: FontWeight.bold)),
           ],
